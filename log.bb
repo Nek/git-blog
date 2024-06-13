@@ -17,8 +17,12 @@
                                  date-out (.format date-in out-formatter)
                                  [sort-date day-date time seconds] (str/split date-out #",")]
                              (into message {:sort-date sort-date :day-date day-date :time time :seconds seconds})))
+(def command "git log --pretty=format:'{%n:commit \"%H\"%n  :author \"%aN <%aE>\"%n  :date \"%ad\"%n  :body \"%B\"}'")
 
-(def messages (edn/read-string (-> (shell {:out :string} (str "./log2edn.sh " (or (first *command-line-args*) "."))) :out)))
+(def messages (edn/read-string (str "[" (-> (shell {:out :string :dir (or (first *command-line-args*) ".")} command) :out) "]")))
+
+(println messages)
+
 
 (def enriched-messages (map parse-date messages))
 
