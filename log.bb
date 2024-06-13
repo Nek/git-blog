@@ -15,19 +15,17 @@
                                  out-formatter (DateTimeFormatter/ofPattern "yyyyMMdd','dd MMMM yyyy','HH:mm:ss','ss")
                                  date-in (LocalDateTime/parse (:date message) in-formatter)
                                  date-out (.format date-in out-formatter)
-                                 [sort-date day-date time seconds] (str/split date-out #",")]
-                             (into message {:sort-date sort-date :day-date day-date :time time :seconds seconds})))
-(def command "git log --pretty=format:'{%n:commit \"%H\"%n  :author \"%aN <%aE>\"%n  :date \"%ad\"%n  :body \"%B\"}'")
+                                 [sortable-date readable-date time seconds] (str/split date-out #",")]
+                             (into message {:sortable-date sortable-date :readable-date readable-date :time time :seconds seconds})))
 
-(def messages (edn/read-string (str "[" (-> (shell {:out :string :dir (or (first *command-line-args*) ".")} command) :out) "]")))
+(def git-log-command "git log --pretty=format:'{%n:commit \"%H\"%n  :author \"%aN <%aE>\"%n  :date \"%ad\"%n  :body \"%B\"}'")
 
-(println messages)
+(def work-dir (or (first *command-line-args*) "."))
 
+(def messages (edn/read-string (str "[" (-> (shell {:out :string :dir work-dir} git-log-command) :out) "]")))
 
-(def enriched-messages (map parse-date messages))
-
-(def messages-by-date (->> enriched-messages 
-                           (group-by :sort-date)
+(def messages-by-date (->> (map parse-date messages) 
+                           (group-by :sortable-date)
                            (into (sorted-map))))
 
 (def dates (-> messages-by-date
@@ -39,15 +37,14 @@
 
 (defn render-message [message]
   (let [{:keys [time body]} message] 
-    (println body)
     [:section {:class "message"}
      [:h3 time]
-     [:div (raw-string (md-to-html-string body))]]))
+     (raw-string (md-to-html-string body))]))
 
 (def content (reduce (fn [acc date]
                        (let [messages (get messages-by-date date)
                              rendered-messages (map render-message messages)
-                             rendered-date (render-date (:day-date (first messages)))
+                             rendered-date (render-date (:readable-date (first messages)))
                              section (vec (concat [:section {:class "year"}] [rendered-date] rendered-messages))]
                          (into acc [section])))
                      [:main]
