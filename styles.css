@@ -1,0 +1,75 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&display=swap');
+.font-regular {
+    font-family: "DM Mono", monospace;
+    font-weight: 300;
+    font-style: normal;
+  }
+  
+  .font-bold {
+    font-family: "DM Mono", monospace;
+    font-weight: 500;
+    font-style: normal;
+  }
+  
+  .font-regular-italic {
+    font-family: "DM Mono", monospace;
+    font-weight: 300;
+    font-style: italic;
+  }
+
+  
+  .font-bold-italic {
+    font-family: "DM Mono", monospace;
+    font-weight: 500;
+    font-style: italic;
+  }
+  
+  html, body {
+    font-family: "DM Mono", monospace;
+    font-weight: 300;
+    font-style: normal;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-size: medium;
+    font-family: "DM Mono", monospace;
+    font-weight: 500;
+    font-style: normal;
+    padding: 0;
+    margin: 0;
+  }
+
+  h2 {
+    padding-bottom: 1.5em;
+  }
+
+  h3 {
+    padding: 0 0 0.75em 0;
+    margin: 0;
+  }
+
+  p {
+    padding-bottom: 0.75em;
+    margin: 0;
+    line-height: 1.2;
+  }
+
+  section {
+    padding: 0;
+    margin: 0;
+  }
+
+  section.year {
+    padding-bottom: 1.5em;
+  }
+
+  section.message {
+    padding-bottom: 0.75em;
+  }
+
+  img {
+    display: block;
+    --widthA: calc(100vw / 2.618);
+    width: calc(100vw - var(--widthA));
+    margin: auto;
+  }
