@@ -89,7 +89,7 @@
                               [:meta {:name "viewport" :content "width=device-width, initial-scale=1.0"}]
                               [:title title]
                               #_[:link {:rel "icon" :type "image/png" :href "favicon.png"}]
-                              [:link {:rel "stylesheet" :href "style.css" :type "text/css"}]
+                              [:link {:rel "stylesheet" :href "styles.css" :type "text/css"}]
                              [:body [:nav [:a {:href "index.html"} "log"] " . " [:a {:href "about.html"} "about"]] content]]])
 
 (spit (str output-folder "/index.html") (str "<!DOCTYPE html>" (h/html (index log "log.dudnik.dev/"))))
