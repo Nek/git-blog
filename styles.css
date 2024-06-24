@@ -55,7 +55,25 @@ h6 {
 h2 {
   padding-top: 1.5em;
   padding-bottom: 1.5em;
+  position: relative;
 }
+
+h2 a {
+  text-decoration: none;
+  color: black;
+}
+
+
+h2 a::before {
+  content: " # ";
+  position: absolute;
+  left: -1em;
+}
+
+h2 a:hover {
+  text-decoration: dashed underline;
+}
+
 
 h3 {
   padding: 0 0 0.75em 0;
@@ -65,12 +83,17 @@ h3 {
 
 h3 a {
   text-decoration: none;
+  color: black;
 }
 
 h3 a::before {
   content: " # ";
   position: absolute;
   left: -1em;
+}
+
+h3 a:hover {
+  text-decoration: dashed underline;
 }
 
 p {
