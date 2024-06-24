@@ -37,7 +37,7 @@
 
 (def input-repo (nth *command-line-args* 0 "."))
 (def output-folder (nth *command-line-args* 1 "."))
-(def css-path (str/join "/" (concat (butlast (str/split *file* #"/")) [(nth *command-line-args* 2 "styles.css") ])))
+(def css-path (str/join "/" (concat (butlast (str/split *file* #"/")) [(nth *command-line-args* 2 "styles.css")])))
 
 (def messages (edn/read-string (str "[" (-> (shell {:out :string :dir input-repo} git-log-command) :out) "]")))
 
@@ -84,11 +84,13 @@
 (def about [:main {:id "about"} (gemtext/to-hiccup (gemtext/parse (slurp (str input-repo "/about.txt") :encoding "UTF-8")))])
 
 (defn index [content title] [:html {:lang "en-US"}
-                       [:head
-                        [:meta {:charset "UTF-8"}]
-                        [:title title]
-                        [:style (raw-string css)]]
-                       [:body [:nav [:a {:href "index.html"} "log"] " . " [:a {:href "about.html"} "about"]] content]])
+                             [:head
+                              [:meta {:charset "UTF-8"}]
+                              [:meta {:name "viewport" :content "width=device-width, initial-scale=1.0"}]
+                              [:title title]
+                              [:link {:rel "icon" :type "image/png" :href "favicon.png"}]
+                              [:link {:rel "stylesheet" :href "style.css" :type "text/css"}]
+                             [:body [:nav [:a {:href "index.html"} "log"] " . " [:a {:href "about.html"} "about"]] content]])
 
 (spit (str output-folder "/index.html") (str "<!DOCTYPE html>" (h/html (index log "log.dudnik.dev/"))))
 (spit (str output-folder "/about.html") (str "<!DOCTYPE html>" (h/html (index about "log.dudnik.dev/about"))))
