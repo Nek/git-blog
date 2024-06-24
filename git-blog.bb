@@ -12,9 +12,7 @@
      "* item\n* item 2\n"          [[:item "item"] [:item "item 2"]]})
 
 (require '[babashka.deps :as deps])
-(deps/add-deps '{:deps {org.clojars.askonomm/ruuter {:mvn/version "1.3.4"}
-                        markdown-clj/markdown-clj {:mvn/version "1.10.7"}
-                        com.omarpolo/gemtext {:mvn/version "0.1.8"}}})
+(deps/add-deps '{:deps {com.omarpolo/gemtext {:mvn/version "0.1.8"}}})
 
 (require
  '[babashka.process :refer [shell]]
@@ -37,11 +35,11 @@
 
 (def git-log-command "git log --pretty=format:'{%n:commit \"%H\"%n  :author \"%aN <%aE>\"%n  :date \"%ad\"%n  :body \"%B\"}'")
 
-(def work-dir (nth *command-line-args* 0 "."))
-(def output (nth *command-line-args* 1 "index.html"))
+(def input-repo (nth *command-line-args* 0 "."))
+(def output-folder (nth *command-line-args* 1 "."))
 (def css-path (str/join "/" (concat (butlast (str/split *file* #"/")) [(nth *command-line-args* 2 "styles.css") ])))
 
-(def messages (edn/read-string (str "[" (-> (shell {:out :string :dir work-dir} git-log-command) :out) "]")))
+(def messages (edn/read-string (str "[" (-> (shell {:out :string :dir input-repo} git-log-command) :out) "]")))
 
 
 (def message-comps-by-date (->> messages
@@ -81,13 +79,16 @@
 
 (def css (slurp css-path :encoding "UTF-8"))
 
-(def main (into [:main] content))
+(def log (into [:main {:id "log"}] content))
 
-(def markup [:html {:lang "en-US"}
-             [:head
-              [:meta {:charset "UTF-8"}]
-              [:title "Log"]
-              [:style (raw-string css)]]
-             [:body main]])
+(def about [:main {:id "about"} (gemtext/to-hiccup (gemtext/parse (slurp (str input-repo "/about.txt") :encoding "UTF-8")))])
 
-(spit output (str "<!DOCTYPE html>" (h/html markup)))
+(defn index [content title] [:html {:lang "en-US"}
+                       [:head
+                        [:meta {:charset "UTF-8"}]
+                        [:title title]
+                        [:style (raw-string css)]]
+                       [:body [:nav [:a {:href "index.html"} "log"] " . " [:a {:href "about.html"} "about"]] content]])
+
+(spit (str output-folder "/index.html") (str "<!DOCTYPE html>" (h/html (index log "log.dudnik.dev/"))))
+(spit (str output-folder "/about.html") (str "<!DOCTYPE html>" (h/html (index about "log.dudnik.dev/about"))))
