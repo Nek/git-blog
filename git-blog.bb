@@ -88,9 +88,9 @@
                               [:meta {:charset "UTF-8"}]
                               [:meta {:name "viewport" :content "width=device-width, initial-scale=1.0"}]
                               [:title title]
-                              [:link {:rel "icon" :type "image/png" :href "favicon.png"}]
+                              #_[:link {:rel "icon" :type "image/png" :href "favicon.png"}]
                               [:link {:rel "stylesheet" :href "style.css" :type "text/css"}]
-                             [:body [:nav [:a {:href "index.html"} "log"] " . " [:a {:href "about.html"} "about"]] content]])
+                             [:body [:nav [:a {:href "index.html"} "log"] " . " [:a {:href "about.html"} "about"]] content]]])
 
 (spit (str output-folder "/index.html") (str "<!DOCTYPE html>" (h/html (index log "log.dudnik.dev/"))))
 (spit (str output-folder "/about.html") (str "<!DOCTYPE html>" (h/html (index about "log.dudnik.dev/about"))))
