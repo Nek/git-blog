@@ -37,7 +37,9 @@
 
 (def git-log-command "git log --pretty=format:'{%n:commit \"%H\"%n  :author \"%aN <%aE>\"%n  :date \"%ad\"%n  :body \"%B\"}'")
 
-(def work-dir (or (first *command-line-args*) "."))
+(def work-dir (nth *command-line-args* 0 "."))
+(def output (nth *command-line-args* 1 "index.html"))
+(def css-path (str/join "/" (concat (butlast (str/split *file* #"/")) [(nth *command-line-args* 2 "styles.css") ])))
 
 (def messages (edn/read-string (str "[" (-> (shell {:out :string :dir work-dir} git-log-command) :out) "]")))
 
@@ -77,15 +79,15 @@
 
 (def content (map render-comp comps))
 
-(def css (slurp "styles.css" :encoding "UTF-8"))
+(def css (slurp css-path :encoding "UTF-8"))
+
+(def main (into [:main] content))
 
 (def markup [:html {:lang "en-US"}
              [:head
               [:meta {:charset "UTF-8"}]
               [:title "Log"]
               [:style (raw-string css)]]
-             [:body (into [:main] content)]])
-
-(def output (or (second *command-line-args*) "index.html"))
+             [:body main]])
 
 (spit output (str "<!DOCTYPE html>" (h/html markup)))
