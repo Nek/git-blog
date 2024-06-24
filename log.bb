@@ -1,12 +1,33 @@
 #!/usr/bin/env bb
 
- (ns log
-   (:require [babashka.process :refer [shell]]
-             [clojure.edn :as edn]
-             [hiccup.util :refer [raw-string]]
-             [hiccup2.core :as h]
-             [clojure.string :as str]
-             [markdown.core :refer [md-to-html-string]]))
+#_(def str->gmi-examples
+  {"# header-1\n"                [[:header-1 "header-1"]]
+   "## header-2\n"               [[:header-2 "header-2"]]
+   "### header-3\n"              [[:header-3 "header-3"]]
+   "=> something else\n"         [[:link "something" "else"]]
+   "=> /foo\n"                   [[:link "/foo" ""]]
+   "= >/foo\n"                   [[:text "= >/foo"]]
+   "```descr\ncode\ncode\n```\n" [[:pre "descr" "code\ncode\n"]]
+   "*foo\n* item\n"              [[:text "*foo"] [:item "item"]]
+   "* item\n* item 2\n"          [[:item "item"] [:item "item 2"]]})
+ 
+(require '[babashka.deps :as deps])
+(deps/add-deps '{:deps {org.clojars.askonomm/ruuter {:mvn/version "1.3.4"}
+                        markdown-clj/markdown-clj {:mvn/version "1.10.7"}
+                        com.omarpolo/gemtext {:mvn/version "0.1.8"}}})
+
+(require '[org.httpkit.server :as srv]
+         '[babashka.process :refer [shell]]
+         '[clojure.edn :as edn]
+         '[clojure.java.browse :as browse]
+         '[ruuter.core :as ruuter]
+         '[clojure.string :as str]
+         '[hiccup2.core :as h]
+         '[hiccup.util :refer [raw-string]]
+         '[markdown.core :refer [md-to-html-string]]
+         '[gemtext.core :as gemtext])
+
+(import '[java.net URLDecoder])
 
 (import 'java.time.format.DateTimeFormatter
         'java.time.LocalDateTime)
@@ -26,14 +47,10 @@
 
 (def messages (edn/read-string (str "[" (-> (shell {:out :string :dir work-dir} git-log-command) :out) "]")))
 
-;; (println (map-indexed (fn [ndx message] (into message {:page (int (/ ndx 10))})) messages))
-
-
-;; (defn paginate [per-page] (fn [message ndx] (if (= (% ndx per-page))))
 
 (def message-comps-by-date (->> messages
                                 (map-indexed message-comp)
-                                (map #(paginate 10 %))
+                                ;; (map #(paginate 10 %))
                                 (group-by :sortable-date)
                                 (into (sorted-map))))
 
@@ -47,10 +64,11 @@
   [:h2 date])
 
 (defn render-message [message]
-  (let [{:keys [time body]} message]
-    [:section {:class "message"}
-     [:h3 time]
-     (raw-string (md-to-html-string body))]))
+  (let [{:keys [time body sortable-date]} message
+        id (str "#" sortable-date "-" time)]
+    [:section {:class "message" :id id} 
+     [:h3 [:a {:href id} time]]
+     (map #(vec ( concat [ (first %) {:class "gemini"}] (rest %))) (gemtext/to-hiccup (gemtext/parse body)))]))
 
 (def comps (reduce (fn [acc date]
                      (let [message-comps (get message-comps-by-date date)
@@ -63,7 +81,7 @@
 (def pages (partition-by :page comps))
 
 (defn get-page [page] (let [max-page (dec (count pages))]
-                       (nth  pages (max 0 (min max-page page)))))
+                        (nth  pages (max 0 (min max-page page)))))
 
 (println (count pages))
 
@@ -71,7 +89,7 @@
 (defmethod render-comp :message [message-comp] (render-message message-comp))
 (defmethod render-comp :date [date-comp] (render-date date-comp))
 
-(def content (map render-comp (get-page 0)))
+(def content (map render-comp comps))
 
 (def css (slurp "styles.css" :encoding "UTF-8"))
 
@@ -82,6 +100,42 @@
               [:style (raw-string css)]]
              [:body (into [:main] content)]])
 
-(spit "index.html" (str
-                    "<!DOCTYPE html>" (h/html markup)))
+(defn index [] (list
+                "<!DOCTYPE html>" 
+                (h/html markup)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Handlers
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defn render [handler & [status]]
+  {:status (or status 200)
+   :body (handler)})
+
+(defn app-index [_]
+  (render index))
+
+(def port 3001)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Routes
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def routes [{:path     "/"
+              :method   :get
+              :response app-index}
+             #_{:path     "/todos/edit/:id"
+              :method   :get
+              :response edit-item}
+            ])
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Server
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(when (= *file* (System/getProperty "babashka.file"))
+  (let [url (str "http://localhost:" port "/")]
+    (srv/run-server #(ruuter/route routes %) {:port port})
+    (println "serving" url)
+    (browse/browse-url url)
+    @(promise)))
