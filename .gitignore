@@ -2,3 +2,4 @@
 .calva
 .clj-kondo
 .lsp
+*.html

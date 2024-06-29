@@ -12,14 +12,14 @@
      "* item\n* item 2\n"          [[:item "item"] [:item "item 2"]]})
 
 (require '[babashka.deps :as deps])
-(deps/add-deps '{:deps {com.omarpolo/gemtext {:mvn/version "0.1.8"}}})
+(deps/add-deps '{:deps {com.omarpolo/gemtext {:mvn/version "0.1.8"}
+                        org.babashka/json {:mvn/version "0.1.6"}}})
 
 (require
  '[babashka.process :refer [shell]]
- '[clojure.edn :as edn]
+ '[babashka.json :refer [read-str]]
  '[clojure.string :as str]
  '[hiccup2.core :as h]
- '[hiccup.util :refer [raw-string]]
  '[gemtext.core :as gemtext])
 
 (import 'java.time.format.DateTimeFormatter
@@ -30,17 +30,17 @@
                                        out-formatter (DateTimeFormatter/ofPattern "yyyyMMdd','dd MMMM yyyy','HH:mm:ss','ss")
                                        date-in (LocalDateTime/parse (:date message) in-formatter)
                                        date-out (.format date-in out-formatter)
+                                       body (:message message)
                                        [sortable-date readable-date time seconds] (str/split date-out #",")]
-                                   (into message {:kind :message :ndx ndx :sortable-date sortable-date :readable-date readable-date :time time :seconds seconds})))
+                                   (into message {:kind :message :body body :ndx ndx :sortable-date sortable-date :readable-date readable-date :time time :seconds seconds})))
 
-(def git-log-command "git log --pretty=format:'{%n:commit \"%H\"%n  :author \"%aN <%aE>\"%n  :date \"%ad\"%n  :body \"%B\"}'")
+(def git-log-command "jc git log")
 
 (def input-repo (nth *command-line-args* 0 "."))
 (def output-folder (nth *command-line-args* 1 "."))
 (def css-path (str/join "/" (concat (butlast (str/split *file* #"/")) [(nth *command-line-args* 2 "styles.css")])))
 
-(def messages (edn/read-string (str "[" (-> (shell {:out :string :dir input-repo} git-log-command) :out) "]")))
-
+(def messages (read-str (-> (shell {:out :string :dir input-repo} git-log-command) :out)))
 
 (def message-comps-by-date (->> messages
                                 (map-indexed message-comp)
@@ -58,10 +58,11 @@
 
 (defn render-message [message]
   (let [{:keys [time body sortable-date]} message
-        id (str "#" sortable-date "-" time)]
-    [:section {:class "message" :id id}
-     [:h3 [:a {:href id} time]]
-     (map #(vec (concat [(first %) {:class "gemini"}] (rest %))) body)]))
+        id (str "#" sortable-date "-" time)
+        rendered-body (gemtext/to-hiccup (gemtext/parse body))]
+    (into [:section {:class "message" :id id}
+           [:h3 [:a {:href id} time]]]
+          (vec rendered-body))))
 
 (def comps (reduce (fn [acc date]
                      (let [message-comps (get message-comps-by-date date)
@@ -77,8 +78,6 @@
 
 (def content (map render-comp comps))
 
-(def css (slurp css-path :encoding "UTF-8"))
-
 (def log (into [:main {:id "log"}] content))
 
 (def about [:main {:id "about"} (gemtext/to-hiccup (gemtext/parse (slurp (str input-repo "/about.txt") :encoding "UTF-8")))])
@@ -89,7 +88,7 @@
                               [:meta {:name "viewport" :content "width=device-width, initial-scale=1.0"}]
                               [:title title]
                               #_[:link {:rel "icon" :type "image/png" :href "favicon.png"}]
-                              [:link {:rel "stylesheet" :href "styles.css" :type "text/css"}]
+                              [:link {:rel "stylesheet" :href css-path :type "text/css"}]
                              [:body [:nav [:a {:href "index.html"} "log"] " . " [:a {:href "about.html"} "about"]] content]]])
 
 (spit (str output-folder "/index.html") (str "<!DOCTYPE html>" (h/html (index log "log.dudnik.dev/"))))
