@@ -61,7 +61,7 @@
         id (str "#" sortable-date "-" time)]
     [:section {:class "message" :id id}
      [:h3 [:a {:href id} time]]
-     (map #(vec (concat [(first %) {:class "gemini"}] (rest %))) (gemtext/to-hiccup (gemtext/parse body)))]))
+     (map #(vec (concat [(first %) {:class "gemini"}] (rest %))) body)]))
 
 (def comps (reduce (fn [acc date]
                      (let [message-comps (get message-comps-by-date date)
