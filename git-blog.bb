@@ -36,7 +36,7 @@
 
 (def input-repo (nth *command-line-args* 0 "."))
 (def output-folder (nth *command-line-args* 1 "."))
-(def css-path (str/join "/" (concat (butlast (str/split *file* #"/")) [(nth *command-line-args* 2 "styles.css")])))
+(def css (nth *command-line-args* 2 "styles.css"))
 
 (def messages 
   (let [json-str (-> (process {:dir input-repo} "git log") (process {:out :string} "jc --git-log") deref :out)]
@@ -88,7 +88,7 @@
                               [:meta {:name "viewport" :content "width=device-width, initial-scale=1.0"}]
                               [:title title]
                               #_[:link {:rel "icon" :type "image/png" :href "favicon.png"}]
-                              [:link {:rel "stylesheet" :href css-path :type "text/css"}]
+                              [:link {:rel "stylesheet" :href css :type "text/css"}]
                              [:body [:nav [:a {:href "index.html"} "log"] " . " [:a {:href "about.html"} "about"]] content]]])
 
 (spit (str output-folder "/index.html") (str "<!DOCTYPE html>" (h/html (index log "log.dudnik.dev/"))))
