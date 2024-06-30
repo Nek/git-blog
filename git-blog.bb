@@ -34,13 +34,14 @@
                                        [sortable-date readable-date time seconds] (str/split date-out #",")]
                                    (into message {:kind :message :body body :ndx ndx :sortable-date sortable-date :readable-date readable-date :time time :seconds seconds})))
 
-(def git-log-command "jc git log")
-
 (def input-repo (nth *command-line-args* 0 "."))
 (def output-folder (nth *command-line-args* 1 "."))
 (def css-path (str/join "/" (concat (butlast (str/split *file* #"/")) [(nth *command-line-args* 2 "styles.css")])))
 
-(def messages (read-str (-> (shell {:out :string :dir input-repo} git-log-command) :out)))
+(def messages 
+  (let [log (:out (shell {:out :string :dir input-repo} "git log"))
+        json-str (:out (shell {:in log :out :string} "jc --git-log"))]
+    (read-str json-str)))
 
 (def message-comps-by-date (->> messages
                                 (map-indexed message-comp)
