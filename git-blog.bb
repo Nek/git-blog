@@ -16,7 +16,7 @@
                         org.babashka/json {:mvn/version "0.1.6"}}})
 
 (require
- '[babashka.process :refer [shell process]]
+ '[babashka.process :refer [process]]
  '[babashka.json :refer [read-str]]
  '[clojure.string :as str]
  '[hiccup2.core :as h]
