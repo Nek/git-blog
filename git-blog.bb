@@ -16,7 +16,7 @@
                         org.babashka/json {:mvn/version "0.1.6"}}})
 
 (require
- '[babashka.process :refer [shell]]
+ '[babashka.process :refer [shell process]]
  '[babashka.json :refer [read-str]]
  '[clojure.string :as str]
  '[hiccup2.core :as h]
@@ -39,8 +39,7 @@
 (def css-path (str/join "/" (concat (butlast (str/split *file* #"/")) [(nth *command-line-args* 2 "styles.css")])))
 
 (def messages 
-  (let [log (:out (shell {:out :string :dir input-repo} "git log"))
-        json-str (:out (shell {:in log :out :string} "jc --git-log"))]
+  (let [json-str (-> (process {:dir input-repo} "git log") (process {:out :string} "jc --git-log") deref :out)]
     (read-str json-str)))
 
 (def message-comps-by-date (->> messages
